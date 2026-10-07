@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מודל הונאות אשראי</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f3f0;
+  --surface-1: #fcfcfb;
+  --border: #e3e2de;
+  --grid: #ecebe7;
+  --axis: #b9b8b2;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --div-pos: #e34948;
+  --div-neg: #2a78d6;
+  --seq-1: #cde2fb; --seq-2: #9ec5f4; --seq-3: #5598e7; --seq-4: #256abf; --seq-5: #104281;
+  --accent: #2a78d6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #121211; --surface-1: #1a1a19; --border: #2e2e2c; --grid: #262624; --axis: #55554f;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+    --div-pos: #e66767; --div-neg: #3987e5;
+    --seq-1: #1f3550; --seq-2: #184f95; --seq-3: #256abf; --seq-4: #3987e5; --seq-5: #86b6ef;
+    --accent: #3987e5;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #121211; --surface-1: #1a1a19; --border: #2e2e2c; --grid: #262624; --axis: #55554f;
+  --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+  --div-pos: #e66767; --div-neg: #3987e5;
+  --seq-1: #1f3550; --seq-2: #184f95; --seq-3: #256abf; --seq-4: #3987e5; --seq-5: #86b6ef;
+  --accent: #3987e5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--text-primary);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
+header h1 { font-size: 26px; margin: 0 0 4px; }
+header p { margin: 0; color: var(--text-secondary); }
+.controls {
+  display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: center;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 18px; margin: 20px 0 16px;
+}
+.ctl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ctl-label { color: var(--text-secondary); font-size: 13px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button, .chip {
+  border: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: 14px;
+  padding: 6px 14px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.chip { border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+.chip:hover { border-color: var(--accent); }
+input[type=range] { width: 220px; accent-color: var(--accent); direction: ltr; }
+.thr-val { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3.2em; display: inline-block; direction: ltr; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.kpi .k { font-size: 13px; color: var(--text-secondary); }
+.kpi .v { font-size: 30px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.kpi .s { font-size: 12px; color: var(--text-muted); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 16px; margin-bottom: 16px; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; min-width: 0; }
+.card h2 { font-size: 16px; margin: 0 0 2px; }
+.card .sub { font-size: 13px; color: var(--text-secondary); margin: 0 0 10px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-left: 6px; }
+.legend i.sq { height: 10px; width: 10px; border-radius: 2px; }
+.chart { position: relative; width: 100%; direction: ltr; }
+.chart svg { display: block; overflow: visible; }
+.chart text { fill: var(--text-muted); font-size: 11px; }
+.chart .axis-title { fill: var(--text-secondary); font-size: 12px; }
+.tip {
+  position: fixed; pointer-events: none; z-index: 10; background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15); opacity: 0; transition: opacity .1s; direction: rtl; min-width: 140px;
+}
+.tip .row { display: flex; justify-content: space-between; gap: 14px; }
+.tip .row b { font-variant-numeric: tabular-nums; direction: ltr; }
+.tip .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-left: 6px; }
+.cm { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px; direction: rtl; margin-top: 8px; }
+.cm .h { font-size: 12px; color: var(--text-secondary); text-align: center; padding: 4px; align-self: end; }
+.cm .rh { font-size: 12px; color: var(--text-secondary); writing-mode: horizontal-tb; align-self: center; padding-left: 8px; }
+.cm .cell { border-radius: 8px; padding: 18px 10px; text-align: center; }
+.cm .cell .n { font-size: 30px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.cm .cell .l { font-size: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 8px; border-bottom: 1px solid var(--border); text-align: center; }
+th:first-child, td:first-child { text-align: right; }
+th { color: var(--text-secondary); font-weight: 600; }
+tr.cur td { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.note { font-size: 13px; color: var(--text-secondary); margin-top: 10px; }
+.table-scroll { overflow-x: auto; }
+.split-card { margin-bottom: 16px; }
+.split-bar { display: flex; gap: 2px; border-radius: 8px; overflow: hidden; }
+.split-bar > div { padding: 10px 14px; min-width: 0; }
+.split-bar .train { background: var(--seq-4); color: #fff; }
+.split-bar .test { background: var(--seq-2); color: var(--text-primary); min-width: 128px; }
+.split-bar .t { font-weight: 650; font-size: 15px; }
+.split-bar .d { font-size: 12px; opacity: .92; }
+@media (max-width: 560px) {
+  .kpi .v { font-size: 24px; }
+  input[type=range] { width: 160px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>מודל רגרסיה לוגיסטית – זיהוי הונאות אשראי</h1>
+    <p id="subtitle"></p>
+  </header>
+
+  <div class="controls">
+    <div class="ctl">
+      <span class="ctl-label">מודל</span>
+      <div class="seg" id="modelSeg">
+        <button data-m="baseline" aria-pressed="false">רגיל</button>
+        <button data-m="balanced" aria-pressed="true">מאוזן (class_weight)</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label class="ctl-label" for="thr">סף החלטה</label>
+      <input id="thr" type="range" min="0.01" max="0.99" step="0.005">
+      <span class="thr-val" id="thrVal"></span>
+      <button class="chip" data-t="0.5">0.5</button>
+      <button class="chip" id="tunedBtn"></button>
+    </div>
+  </div>
+
+  <section class="card split-card">
+    <h2>חלוקת הנתונים: 80% אימון / 20% מבחן</h2>
+    <p class="sub">חלוקה מרובדת (stratified), כך ששתי הקבוצות שומרות על אותו שיעור הונאות. המודל לומד רק מקבוצת האימון, והסף נבחר בה. כל המדדים בדאשבורד מחושבים על קבוצת המבחן, שהמודל לא ראה.</p>
+    <div class="split-bar" id="splitBar"></div>
+  </section>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>עקומת ROC</h2>
+      <p class="sub">שני המודלים על סט הבדיקה. הנקודה מסמנת את הסף הנוכחי במודל הנבחר.</p>
+      <div class="legend" id="lgRoc"></div>
+      <div class="chart" id="roc"></div>
+    </section>
+    <section class="card">
+      <h2>עקומת Precision–Recall</h2>
+      <p class="sub">מתאימה יותר לנתונים לא מאוזנים. הקו המקווקו הוא שיעור ההונאות הבסיסי (1.5%).</p>
+      <div class="legend" id="lgPr"></div>
+      <div class="chart" id="pr"></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>המדדים כפונקציה של הסף</h2>
+      <p class="sub" id="thrSub"></p>
+      <div class="legend" id="lgThr"></div>
+      <div class="chart" id="thrChart"></div>
+    </section>
+    <section class="card">
+      <h2>מטריצת בלבול</h2>
+      <p class="sub" id="cmSub"></p>
+      <div class="cm" id="cm"></div>
+      <p class="note" id="cmNote"></p>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>השפעת המשתנים (מקדמי המודל המאוזן)</h2>
+      <p class="sub">משתנים מספריים מנורמלים, כך שהמקדמים ניתנים להשוואה. ימינה = מעלה סיכון, שמאלה = מוריד סיכון.</p>
+      <div class="legend"><span><i class="sq" style="background:var(--div-pos)"></i>מעלה סיכון להונאה</span><span><i class="sq" style="background:var(--div-neg)"></i>מוריד סיכון</span></div>
+      <div class="chart" id="coef"></div>
+    </section>
+    <section class="card">
+      <h2>השוואת מודלים</h2>
+      <p class="sub">סט בדיקה: 2,000 עסקאות, מתוכן 30 הונאות.</p>
+      <div class="table-scroll"><table id="cmp"></table></div>
+      <p class="note" id="cvNote"></p>
+      <p class="note">ה-ROC AUC גבוה (≈0.99), כלומר המודל מדרג היטב. הסף קובע את האיזון: סף נמוך תופס יותר הונאות במחיר
+        יותר אזעקות שווא, וסף גבוה מגדיל את ה-Precision. בחירת הסף צריכה להתבסס על העלות של הונאה שהוחמצה מול העלות של בדיקה מיותרת.</p>
+    </section>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+const NAMES = { baseline: "רגיל", balanced: "מאוזן", balanced_tuned: "מאוזן + סף מכויל" };
+const FEAT = {
+  "bin__location_mismatch": "אי-התאמת מיקום", "bin__foreign_transaction": "עסקה בחו\"ל",
+  "bin__is_night": "עסקת לילה (0–5)", "num__device_trust_score": "ציון אמון מכשיר",
+  "num__velocity_last_24h": "עסקאות ב-24 שעות", "num__amount": "סכום העסקה",
+  "num__transaction_hour": "שעת העסקה", "num__cardholder_age": "גיל בעל הכרטיס",
+  "cat__merchant_category_Electronics": "קטגוריה: אלקטרוניקה", "cat__merchant_category_Grocery": "קטגוריה: מכולת",
+  "cat__merchant_category_Food": "קטגוריה: מזון", "cat__merchant_category_Travel": "קטגוריה: נסיעות",
+};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = (v, d = 3) => Number.isFinite(v) ? v.toFixed(d) : "–";
+const pct = v => Number.isFinite(v) ? (v * 100).toFixed(1) + "%" : "–";
+const y = DATA.y, P = y.reduce((a, b) => a + b, 0), N = y.length - P;
+const state = { model: "balanced", t: DATA.tuned_threshold };
+
+// ---------- metrics ----------
+function confusion(model, t) {
+  const p = DATA.proba[model]; let tp = 0, fp = 0, fn = 0, tn = 0;
+  for (let i = 0; i < p.length; i++) {
+    const pr = p[i] >= t;
+    if (pr && y[i]) tp++; else if (pr) fp++; else if (y[i]) fn++; else tn++;
+  }
+  const recall = tp / P, precision = tp + fp ? tp / (tp + fp) : NaN;
+  const f1 = precision + recall ? 2 * precision * recall / (precision + recall) : 0;
+  return { tp, fp, fn, tn, recall, precision, f1 };
+}
+function curves(model) {
+  const p = DATA.proba[model];
+  const idx = p.map((v, i) => i).sort((a, b) => p[b] - p[a]);
+  const roc = [{ x: 0, y: 0, t: 1 }], pr = [];
+  let tp = 0, fp = 0;
+  for (let k = 0; k < idx.length; k++) {
+    const i = idx[k];
+    if (y[i]) tp++; else fp++;
+    if (k < idx.length - 1 && p[idx[k + 1]] === p[i]) continue;
+    roc.push({ x: fp / N, y: tp / P, t: p[i] });
+    pr.push({ x: tp / P, y: tp / (tp + fp), t: p[i] });
+  }
+  return { roc, pr };
+}
+const CURVES = { baseline: curves("baseline"), balanced: curves("balanced") };
+const SWEEP = {};
+for (const m of ["baseline", "balanced"]) {
+  SWEEP[m] = [];
+  for (let t = 0.01; t <= 0.9901; t += 0.005) SWEEP[m].push({ t: +t.toFixed(3), ...confusion(m, t) });
+}
+
+// ---------- tooltip ----------
+const tip = document.getElementById("tip");
+function showTip(e, html) {
+  tip.innerHTML = html; tip.style.opacity = 1;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + 14, yy = e.clientY + 14;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if (yy + h > innerHeight - 8) yy = e.clientY - h - 14;
+  tip.style.left = x + "px"; tip.style.top = yy + "px";
+}
+const hideTip = () => (tip.style.opacity = 0);
+const row = (label, val, color) =>
+  `<div class="row"><span>${color ? `<span class="sw" style="background:${color}"></span>` : ""}${label}</span><b>${val}</b></div>`;
+
+// ---------- svg helpers ----------
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs = {}, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+function legend(id, items) {
+  document.getElementById(id).innerHTML =
+    items.map(([name, color, dashed]) => `<span><i style="background:${dashed ? "none" : color};${dashed ? `border-top:2px dashed ${color};height:0` : ""}"></i>${name}</span>`).join("");
+}
+
+/* Line chart: series [{name,color,pts:[{x,y,...}]}], hover finds nearest x per series. */
+function lineChart(id, opt) {
+  const host = document.getElementById(id); host.innerHTML = "";
+  const W = host.clientWidth, H = Math.max(240, Math.min(340, W * 0.66));
+  const m = { l: 46, r: 14, t: 10, b: 40 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const sx = v => m.l + v * iw, sy = v => m.t + (1 - v) * ih;
+  const svg = el("svg", { width: W, height: H }, host);
+  for (let i = 0; i <= 5; i++) {
+    const v = i / 5;
+    el("line", { x1: m.l, x2: m.l + iw, y1: sy(v), y2: sy(v), stroke: css(i ? "--grid" : "--axis"), "stroke-width": 1 }, svg);
+    el("text", { x: m.l - 8, y: sy(v) + 4, "text-anchor": "end" }, svg).textContent = v.toFixed(1);
+    el("text", { x: sx(v), y: m.t + ih + 16, "text-anchor": "middle" }, svg).textContent = v.toFixed(1);
+  }
+  el("text", { x: m.l + iw / 2, y: H - 4, "text-anchor": "middle", class: "axis-title" }, svg).textContent = opt.xLabel;
+  const yt = el("text", { x: 0, y: 0, "text-anchor": "middle", class: "axis-title", transform: `translate(12 ${m.t + ih / 2}) rotate(-90)` }, svg);
+  yt.textContent = opt.yLabel;
+  if (opt.ref) el("line", { x1: sx(opt.ref[0][0]), y1: sy(opt.ref[0][1]), x2: sx(opt.ref[1][0]), y2: sy(opt.ref[1][1]), stroke: css("--axis"), "stroke-dasharray": "4 4", "stroke-width": 1.5 }, svg);
+  if (opt.vline != null) el("line", { x1: sx(opt.vline), x2: sx(opt.vline), y1: m.t, y2: m.t + ih, stroke: css("--text-muted"), "stroke-dasharray": "3 3", "stroke-width": 1.5 }, svg);
+  for (const s of opt.series) {
+    const d = s.pts.map((p, i) => `${i ? "L" : "M"}${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join("");
+    el("path", { d, fill: "none", stroke: s.color, "stroke-width": s.width || 2, "stroke-linejoin": "round", opacity: s.dim ? 0.45 : 1 }, svg);
+  }
+  for (const mk of opt.markers || [])
+    el("circle", { cx: sx(mk.x), cy: sy(mk.y), r: 6, fill: mk.color, stroke: css("--surface-1"), "stroke-width": 2 }, svg);
+  // hover layer
+  const cross = el("line", { y1: m.t, y2: m.t + ih, stroke: css("--axis"), "stroke-width": 1, opacity: 0 }, svg);
+  const dots = opt.series.map(s => el("circle", { r: 4, fill: s.color, stroke: css("--surface-1"), "stroke-width": 2, opacity: 0 }, svg));
+  const hit = el("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "transparent" }, svg);
+  hit.addEventListener("pointermove", e => {
+    const r = svg.getBoundingClientRect(), xv = Math.min(1, Math.max(0, (e.clientX - r.left - m.l) / iw));
+    cross.setAttribute("x1", sx(xv)); cross.setAttribute("x2", sx(xv)); cross.setAttribute("opacity", 1);
+    let html = opt.tipHead ? opt.tipHead(xv) : "";
+    opt.series.forEach((s, i) => {
+      let best = s.pts[0];
+      for (const p of s.pts) if (Math.abs(p.x - xv) < Math.abs(best.x - xv)) best = p;
+      dots[i].setAttribute("cx", sx(best.x)); dots[i].setAttribute("cy", sy(best.y)); dots[i].setAttribute("opacity", 1);
+      html += opt.tipRow(s, best);
+    });
+    showTip(e, html);
+  });
+  hit.addEventListener("pointerleave", () => { hideTip(); cross.setAttribute("opacity", 0); dots.forEach(d => d.setAttribute("opacity", 0)); });
+}
+
+function coefChart() {
+  const host = document.getElementById("coef"); host.innerHTML = "";
+  const entries = Object.entries(DATA.coefficients);
+  const W = host.clientWidth, rowH = 26, labelW = Math.min(150, W * 0.36), m = { t: 4, b: 24 };
+  const H = m.t + entries.length * rowH + m.b, iw = W - labelW - 44;
+  const max = Math.max(...entries.map(([, v]) => Math.abs(v)));
+  const neg = Math.max(...entries.map(([, v]) => -Math.min(v, 0))), pos = Math.max(...entries.map(([, v]) => Math.max(v, 0)));
+  const scale = iw / (pos + neg), x0 = labelW + 8 + neg * scale;
+  const svg = el("svg", { width: W, height: H }, host);
+  el("line", { x1: x0, x2: x0, y1: m.t, y2: H - m.b + 4, stroke: css("--axis") }, svg);
+  for (const tv of [-4, -2, 0, 2, 4, 6, 8]) {
+    if (tv < -neg - 0.01 || tv > max + 0.01) continue;
+    const xx = x0 + tv * scale;
+    if (tv) el("line", { x1: xx, x2: xx, y1: m.t, y2: H - m.b, stroke: css("--grid") }, svg);
+    el("text", { x: xx, y: H - 6, "text-anchor": "middle" }, svg).textContent = tv;
+  }
+  entries.forEach(([k, v], i) => {
+    const yy = m.t + i * rowH, color = css(v > 0 ? "--div-pos" : "--div-neg");
+    const w = Math.abs(v) * scale, bx = v > 0 ? x0 : x0 - w;
+    el("text", { x: labelW, y: yy + rowH / 2 + 4, "text-anchor": "end", style: `fill:${css("--text-secondary")};font-size:12px` }, svg).textContent = FEAT[k] || k;
+    const r = Math.min(4, w / 2);
+    const d = v > 0
+      ? `M${bx},${yy + 5}h${w - r}a${r},${r} 0 0 1 ${r},${r}v${rowH - 10 - 2 * r}a${r},${r} 0 0 1 -${r},${r}h-${w - r}z`
+      : `M${bx + w},${yy + 5}h-${w - r}a${r},${r} 0 0 0 -${r},${r}v${rowH - 10 - 2 * r}a${r},${r} 0 0 0 ${r},${r}h${w - r}z`;
+    const bar = el("path", { d, fill: color }, svg);
+    if (i < 3) el("text", { x: v > 0 ? bx + w + 4 : bx - 4, y: yy + rowH / 2 + 4, "text-anchor": v > 0 ? "start" : "end", style: `fill:${css("--text-primary")};font-size:11px` }, svg).textContent = v.toFixed(2);
+    const hit = el("rect", { x: 0, y: yy, width: W, height: rowH, fill: "transparent" }, svg);
+    hit.addEventListener("pointermove", e => showTip(e, `<div><b>${FEAT[k] || k}</b></div>` + row("מקדם", v.toFixed(3), color) + row("יחס סיכויים (e^β)", Math.exp(v).toFixed(2))));
+    hit.addEventListener("pointerleave", hideTip);
+    hit.addEventListener("pointerenter", () => bar.setAttribute("opacity", 0.8));
+    hit.addEventListener("pointerout", () => bar.setAttribute("opacity", 1));
+  });
+}
+
+// ---------- render ----------
+const COLORS = () => ({ baseline: css("--series-1"), balanced: css("--series-2") });
+
+function renderKpis(c) {
+  const r = DATA.results[state.model];
+  const k = [
+    ["ROC AUC", fmt(r.roc_auc), "לא תלוי בסף"],
+    ["PR AUC", fmt(r.pr_auc), "לא תלוי בסף"],
+    ["Recall", pct(c.recall), `${c.tp} מתוך ${P} הונאות נתפסו`],
+    ["Precision", pct(c.precision), `${c.tp} מתוך ${c.tp + c.fp} התראות הן הונאה`],
+    ["F1", fmt(c.f1), "ממוצע הרמוני של Recall ו-Precision"],
+    ["אזעקות שווא", c.fp.toLocaleString(), `מתוך ${N.toLocaleString()} עסקאות תקינות`],
+  ];
+  document.getElementById("kpis").innerHTML = k.map(([a, b, s]) => `<div class="kpi"><div class="k">${a}</div><div class="v">${b}</div><div class="s">${s}</div></div>`).join("");
+}
+
+function renderCM(c) {
+  const vals = [c.tn, c.fp, c.fn, c.tp], lg = v => Math.log10(v + 1) / Math.log10(N + 1);
+  const shade = v => { const s = Math.min(5, 1 + Math.floor(lg(v) * 5)); return [css(`--seq-${s}`), s >= 4 ? "#fff" : "#0b0b0b"]; };
+  const dark = document.documentElement.dataset.theme === "dark" || (matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.dataset.theme !== "light");
+  const cell = (v, label) => {
+    let [bg, fg] = shade(v);
+    if (dark) fg = (Math.min(5, 1 + Math.floor(lg(v) * 5)) >= 5) ? "#0b0b0b" : "#fff";
+    return `<div class="cell" style="background:${bg};color:${fg}"><div class="n">${v.toLocaleString()}</div><div class="l">${label}</div></div>`;
+  };
+  document.getElementById("cm").innerHTML =
+    `<div></div><div class="h">חזוי: תקין</div><div class="h">חזוי: הונאה</div>` +
+    `<div class="rh">בפועל: תקין</div>` + cell(c.tn, "תקין שזוהה נכון (TN)") + cell(c.fp, "אזעקת שווא (FP)") +
+    `<div class="rh">בפועל: הונאה</div>` + cell(c.fn, "הונאה שהוחמצה (FN)") + cell(c.tp, "הונאה שנתפסה (TP)");
+  document.getElementById("cmSub").textContent = `מודל ${NAMES[state.model]}, סף ${state.t.toFixed(3)}. גוון הצבע לפי מספר העסקאות בתא (סקאלה לוגריתמית).`;
+  document.getElementById("cmNote").textContent =
+    `על כל הונאה שנתפסת מתקבלות ${c.tp ? (c.fp / c.tp).toFixed(2) : "–"} אזעקות שווא. ${c.fn} הונאות לא זוהו.`;
+}
+
+function renderTable() {
+  const rows = ["baseline", "balanced", "balanced_tuned"].map(k => {
+    const r = DATA.results[k];
+    const cur = (k === state.model && Math.abs(r.threshold - state.t) < 0.003) || (k === "balanced_tuned" && state.model === "balanced" && Math.abs(r.threshold - state.t) < 0.003);
+    return `<tr class="${cur ? "cur" : ""}"><td>${NAMES[k]}</td><td>${r.threshold.toFixed(2)}</td><td>${fmt(r.roc_auc)}</td><td>${fmt(r.pr_auc)}</td><td>${fmt(r.recall)}</td><td>${fmt(r.precision)}</td><td><b>${fmt(r.f1)}</b></td><td>${r.confusion.tp}/${r.confusion.fp}</td></tr>`;
+  });
+  document.getElementById("cmp").innerHTML =
+    `<thead><tr><th>מודל</th><th>סף</th><th>ROC AUC</th><th>PR AUC</th><th>Recall</th><th>Precision</th><th>F1</th><th>TP/FP</th></tr></thead><tbody>${rows.join("")}</tbody>`;
+  const cv = DATA.cv;
+  document.getElementById("cvNote").textContent =
+    `בדיקה צולבת 5-fold (מודל מאוזן, סף 0.5): ROC AUC ${fmt(cv.roc_auc.mean)} ± ${fmt(cv.roc_auc.std)}, Recall ${fmt(cv.recall.mean)}, Precision ${fmt(cv.precision.mean)}, F1 ${fmt(cv.f1.mean)}.`;
+}
+
+function renderCharts(c) {
+  const C = COLORS(), sel = state.model;
+  const models = ["baseline", "balanced"];
+  const labelOf = m => `${NAMES[m]} (AUC ${fmt(DATA.results[m].roc_auc)})`;
+  legend("lgRoc", [...models.map(m => [labelOf(m), C[m]]), ["ניחוש אקראי", css("--axis"), true]]);
+  lineChart("roc", {
+    xLabel: "False Positive Rate", yLabel: "True Positive Rate (Recall)", ref: [[0, 0], [1, 1]],
+    series: models.map(m => ({ name: NAMES[m], color: C[m], pts: CURVES[m].roc, dim: m !== sel })),
+    markers: [{ x: c.fp / N, y: c.recall, color: C[sel] }],
+    tipRow: (s, p) => `<div style="margin-top:4px"><b>${s.name}</b></div>` + row("FPR", fmt(p.x), s.color) + row("Recall", fmt(p.y)) + row("סף", fmt(p.t)),
+  });
+  legend("lgPr", [...models.map(m => [`${NAMES[m]} (AP ${fmt(DATA.results[m].pr_auc)})`, C[m]]), ["שיעור בסיס", css("--axis"), true]]);
+  lineChart("pr", {
+    xLabel: "Recall", yLabel: "Precision", ref: [[0, P / y.length], [1, P / y.length]],
+    series: models.map(m => ({ name: NAMES[m], color: C[m], pts: CURVES[m].pr, dim: m !== sel })),
+    markers: Number.isFinite(c.precision) ? [{ x: c.recall, y: c.precision, color: C[sel] }] : [],
+    tipRow: (s, p) => `<div style="margin-top:4px"><b>${s.name}</b></div>` + row("Recall", fmt(p.x), s.color) + row("Precision", fmt(p.y)) + row("סף", fmt(p.t)),
+  });
+  const sw = SWEEP[sel], mc = [["Recall", "recall", css("--series-1")], ["Precision", "precision", css("--series-2")], ["F1", "f1", css("--series-3")]];
+  legend("lgThr", [...mc.map(([n, , col]) => [n, col]), ["סף נוכחי", css("--text-muted"), true]]);
+  document.getElementById("thrSub").textContent = `מודל ${NAMES[sel]}. גרור את המחוון למעלה כדי להזיז את הקו האנכי.`;
+  lineChart("thrChart", {
+    xLabel: "סף החלטה", yLabel: "ערך המדד", vline: state.t,
+    series: mc.map(([n, k, col]) => ({ name: n, color: col, pts: sw.filter(p => Number.isFinite(p[k])).map(p => ({ x: p.t, y: p[k], t: p.t })) })),
+    tipHead: xv => `<div><b>סף ${xv.toFixed(3)}</b></div>`,
+    tipRow: (s, p) => row(s.name, fmt(p.y), s.color),
+  });
+}
+
+function render() {
+  const c = confusion(state.model, state.t);
+  document.getElementById("thr").value = state.t;
+  document.getElementById("thrVal").textContent = state.t.toFixed(3);
+  document.querySelectorAll("#modelSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === state.model));
+  renderKpis(c); renderCM(c); renderTable(); renderCharts(c); coefChart();
+}
+
+// ---------- wiring ----------
+document.getElementById("subtitle").textContent =
+  `${DATA.n_total.toLocaleString()} עסקאות, מתוכן ${DATA.n_fraud} הונאות (${(DATA.n_fraud / DATA.n_total * 100).toFixed(1)}%). הנתונים הוצגו על סט הבדיקה: ${y.length.toLocaleString()} עסקאות, מתוכן ${P} הונאות.`;
+document.getElementById("splitBar").innerHTML = [["train", "אימון"], ["test", "מבחן"]].map(([k, name]) => {
+  const s = DATA.split[k], share = s.rows / DATA.n_total;
+  return `<div class="${k}" style="flex:${share}"><div class="t">${name} · ${Math.round(share * 100)}%</div>` +
+    `<div class="d">${s.rows.toLocaleString()} עסקאות · ${s.fraud} הונאות (${(s.fraud_rate * 100).toFixed(2)}%)</div></div>`;
+}).join("");
+const tunedBtn = document.getElementById("tunedBtn");
+tunedBtn.textContent = `סף מכויל (${DATA.tuned_threshold.toFixed(2)})`;
+tunedBtn.addEventListener("click", () => { state.model = "balanced"; state.t = DATA.tuned_threshold; render(); });
+document.querySelector('[data-t="0.5"]').addEventListener("click", () => { state.t = 0.5; render(); });
+document.querySelectorAll("#modelSeg button").forEach(b => b.addEventListener("click", () => { state.model = b.dataset.m; render(); }));
+document.getElementById("thr").addEventListener("input", e => { state.t = +e.target.value; render(); });
+let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(render, 80); }).observe(document.querySelector(".wrap"));
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+render();
+</script>
+</body>
+</html>

@@ -72,5 +72,17 @@
     "cat__merchant_category_Food": 0.682,
     "num__cardholder_age": -0.68,
     "cat__merchant_category_Travel": 0.543
+  },
+  "split": {
+    "train": {
+      "rows": 8000,
+      "fraud": 121,
+      "fraud_rate": 0.0151
+    },
+    "test": {
+      "rows": 2000,
+      "fraud": 30,
+      "fraud_rate": 0.015
+    }
   }
 }

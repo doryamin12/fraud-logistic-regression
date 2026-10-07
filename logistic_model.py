@@ -64,8 +64,14 @@ def print_result(name, r):
     print(f"confusion : TN={c['tn']} FP={c['fp']} FN={c['fn']} TP={c['tp']}")
 
 
+# 80/20 train/test split, stratified so both sets keep the ~1.5% fraud rate
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, stratify=y, random_state=RANDOM_STATE)
+split = {name: {"rows": int(len(t)), "fraud": int(t.sum()), "fraud_rate": round(float(t.mean()), 4)}
+         for name, t in [("train", y_train), ("test", y_test)]}
+print("=== Train/test split (80/20, stratified) ===")
+for name, s in split.items():
+    print(f"{name:5s}: {s['rows']:,} rows ({s['rows'] / len(y):.0%}), {s['fraud']} fraud ({s['fraud_rate']:.2%})")
 skf = StratifiedKFold(5, shuffle=True, random_state=RANDOM_STATE)
 
 results = {}
@@ -99,6 +105,7 @@ results["coefficients_balanced"] = coefs.round(3).to_dict()
 print("\n=== Coefficients (balanced model) ===")
 print(coefs.round(3).to_string())
 
+results["split"] = split
 (OUT / "metrics.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
 
 # Plots
