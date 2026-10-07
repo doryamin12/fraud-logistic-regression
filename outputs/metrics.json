@@ -1,0 +1,76 @@
+{
+  "baseline": {
+    "threshold": 0.5,
+    "roc_auc": 0.9952,
+    "pr_auc": 0.799,
+    "recall": 0.5667,
+    "precision": 0.8095,
+    "f1": 0.6667,
+    "confusion": {
+      "tn": 1966,
+      "fp": 4,
+      "fn": 13,
+      "tp": 17
+    }
+  },
+  "balanced": {
+    "threshold": 0.5,
+    "roc_auc": 0.9947,
+    "pr_auc": 0.7514,
+    "recall": 1.0,
+    "precision": 0.2941,
+    "f1": 0.4545,
+    "confusion": {
+      "tn": 1898,
+      "fp": 72,
+      "fn": 0,
+      "tp": 30
+    }
+  },
+  "balanced_tuned": {
+    "threshold": 0.9686,
+    "roc_auc": 0.9947,
+    "pr_auc": 0.7514,
+    "recall": 0.8667,
+    "precision": 0.5778,
+    "f1": 0.6933,
+    "confusion": {
+      "tn": 1951,
+      "fp": 19,
+      "fn": 4,
+      "tp": 26
+    }
+  },
+  "cv_balanced_0.5": {
+    "roc_auc": {
+      "mean": 0.9942,
+      "std": 0.0015
+    },
+    "recall": {
+      "mean": 0.9802,
+      "std": 0.0162
+    },
+    "precision": {
+      "mean": 0.3108,
+      "std": 0.0425
+    },
+    "f1": {
+      "mean": 0.4703,
+      "std": 0.0485
+    }
+  },
+  "coefficients_balanced": {
+    "bin__location_mismatch": 7.032,
+    "bin__foreign_transaction": 6.802,
+    "bin__is_night": 5.193,
+    "num__device_trust_score": -3.399,
+    "num__velocity_last_24h": 2.258,
+    "cat__merchant_category_Electronics": 1.074,
+    "num__amount": 1.071,
+    "num__transaction_hour": -0.996,
+    "cat__merchant_category_Grocery": 0.735,
+    "cat__merchant_category_Food": 0.682,
+    "num__cardholder_age": -0.68,
+    "cat__merchant_category_Travel": 0.543
+  }
+}
